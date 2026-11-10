@@ -52,7 +52,9 @@ func (a *app) hello(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) version(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"version": version})
+	if err := json.NewEncoder(w).Encode(map[string]string{"version": version}); err != nil {
+		a.log.Error("version json", "err", err)
+	}
 }
 
 // countVisit increments the counter kept in <dataDir>/visits; a missing file is a first start.

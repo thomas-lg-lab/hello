@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -8,17 +9,6 @@ import (
 	"strings"
 	"testing"
 )
-
-func get(t *testing.T, h http.Handler, path, user string) (int, string) {
-	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	if user != "" {
-		req.Header.Set("Remote-User", user)
-	}
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	return rec.Code, rec.Body.String()
-}
 
 func request(t *testing.T, h http.Handler, method, path, user string) (int, string) {
 	t.Helper()
@@ -29,6 +19,10 @@ func request(t *testing.T, h http.Handler, method, path, user string) (int, stri
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	return rec.Code, rec.Body.String()
+}
+
+func get(t *testing.T, h http.Handler, path, user string) (int, string) {
+	return request(t, h, http.MethodGet, path, user)
 }
 
 func TestHealthz(t *testing.T) {
@@ -93,9 +87,33 @@ func TestVersion(t *testing.T) {
 	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
 		t.Fatalf("Content-Type = %q, want %q", ct, "application/json")
 	}
-	body := rec.Body.String()
-	if !strings.Contains(body, `"version":"`+version+`"`) {
-		t.Fatalf("body = %q, want {\"version\":\"%s\"}", body, version)
+	var v struct {
+		Version string `json:"version"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&v); err != nil {
+		t.Fatalf("decode body = %v", err)
+	}
+	if v.Version != version {
+		t.Fatalf("version = %q, want %q", v.Version, version)
+	}
+}
+
+func TestVersionHEAD(t *testing.T) {
+	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	code, body := request(t, h, http.MethodHead, "/version", "")
+	if code != http.StatusOK {
+		t.Fatalf("HEAD /version = %d, want 200", code)
+	}
+	if body != "" {
+		t.Fatalf("HEAD /version body = %q, want empty", body)
+	}
+}
+
+func TestVersionOPTIONS(t *testing.T) {
+	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	code, _ := request(t, h, http.MethodOptions, "/version", "")
+	if code != http.StatusMethodNotAllowed {
+		t.Fatalf("OPTIONS /version = %d, want 405", code)
 	}
 }
 
