@@ -20,6 +20,17 @@ func get(t *testing.T, h http.Handler, path, user string) (int, string) {
 	return rec.Code, rec.Body.String()
 }
 
+func request(t *testing.T, h http.Handler, method, path, user string) (int, string) {
+	t.Helper()
+	req := httptest.NewRequest(method, path, nil)
+	if user != "" {
+		req.Header.Set("Remote-User", user)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return rec.Code, rec.Body.String()
+}
+
 func TestHealthz(t *testing.T) {
 	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if code, _ := get(t, h, "/healthz", ""); code != http.StatusOK {
@@ -68,5 +79,32 @@ func TestHelloShowsTheVersion(t *testing.T) {
 	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if _, body := get(t, h, "/", "alice"); !strings.Contains(body, "Version : "+version) {
 		t.Fatalf("answer = %q, want the version %q", body, version)
+	}
+}
+
+func TestVersion(t *testing.T) {
+	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	req := httptest.NewRequest(http.MethodGet, "/version", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /version = %d, want 200", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("Content-Type = %q, want %q", ct, "application/json")
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"version":"`+version+`"`) {
+		t.Fatalf("body = %q, want {\"version\":\"%s\"}", body, version)
+	}
+}
+
+func TestVersionMethodNotAllowed(t *testing.T) {
+	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	for _, method := range []string{"POST", "PUT", "DELETE", "PATCH"} {
+		code, _ := request(t, h, method, "/version", "")
+		if code != http.StatusMethodNotAllowed {
+			t.Fatalf("%s /version = %d, want 405", method, code)
+		}
 	}
 }
