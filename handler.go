@@ -45,6 +45,7 @@ func (a *app) hello(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		fmt.Fprintf(w, "Visites : %d\n", visits)
 	}
+	fmt.Fprintf(w, "Version : %s\n", version)
 }
 
 // countVisit increments the counter kept in <dataDir>/visits; a missing file is a first start.

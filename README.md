@@ -7,7 +7,7 @@ The smallest lab app: it greets the user the proxy signed in (`Remote-User` head
 
 | | |
 | --- | --- |
-| HTTP | port 8080; `GET /` answers `Bonjour <user>` and the visit count, `GET /healthz` answers `ok` |
+| HTTP | port 8080; `GET /` answers `Bonjour <user>`, the visit count and the image version, `GET /healthz` answers `ok` |
 | Data | `/data` (override with `DATA_DIR`); empty on first start is fine |
 | Secrets | none |
 | Image | `ghcr.io/thomas-lg-lab/hello`, non-root (uid 10001), static binary on distroless |
