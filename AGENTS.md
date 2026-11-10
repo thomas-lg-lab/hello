@@ -22,3 +22,10 @@
   adding one (Renovate keeps them current).
 - **Secrets** never go in the repository, in a commit message or in a log.
 - Technical files are written in English.
+
+## This repository
+
+- Go, standard library only; `main.go` (server, signals), `handler.go` (routes), `handler_test.go`.
+- The lab's runtime contract (port 8080, `/healthz`, `Remote-User`, `/data`, `/secrets`, non-root, SIGTERM) is
+  checked on the built image by the shared image workflow (`contract-test: true` in `ci.yml`): keep it green.
+- Local checks: `CONTRIBUTING.md`.
