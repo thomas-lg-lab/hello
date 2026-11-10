@@ -1,7 +1,4 @@
-# CI: the project's checks, then the image, so nothing is published that did not pass them. Replace the `checks`
-# job with the project's own (build, tests, lint), keep their names in `needs` of `image` and in the required
-# checks of .github/rulesets/main.json. A project without an image deletes the `image` job (and `image / build`
-# from the ruleset, and registry-cleanup.yml).
+# CI: the project's checks, then the image, so nothing is published that did not pass them.
 name: CI
 
 on:
@@ -21,17 +18,24 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # gofmt, go vet and the tests, in the same Go image as the Dockerfile's build stage.
   checks:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    container:
+      image: golang:1.27@sha256:e519d3b0a5b285e5aa53ab9eef02bc6bbb9cb04608389b743a136a9ce75f0d1e
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: echo "Replace this job with the project's build, tests and lint."
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - run: go vet ./...
+      - run: go test -race ./...
 
-  # Build and Trivy gate on every PR; edge and sha-* from main; X.Y.Z and latest from a release tag.
+  # Build, runtime contract test and Trivy gate on every PR; edge and sha-* from main; X.Y.Z and latest from a release
+  # tag. The contract test is the lab's: the image must run as the cluster runs it.
   image:
     needs: [checks]
     permissions:
@@ -40,4 +44,6 @@ jobs:
       packages: write
       id-token: write
       attestations: write
-    uses: thomas-lg-lab/.github/.github/workflows/container-image.yml@21ff202fae4e0f07d7f18b710022abc2d5004f96 # v2.0.0
+    uses: thomas-lg-lab/.github/.github/workflows/container-image.yml@158562ae4296fc4fcb9ff7caad780ccc81d07152 # feat/contract-test, until its release
+    with:
+      contract-test: true
