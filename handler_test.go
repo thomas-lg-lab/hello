@@ -63,3 +63,10 @@ func TestUnknownPath(t *testing.T) {
 		t.Fatalf("GET /nope = %d, want 404", code)
 	}
 }
+
+func TestHelloShowsTheVersion(t *testing.T) {
+	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if _, body := get(t, h, "/", "alice"); !strings.Contains(body, "Version : "+version) {
+		t.Fatalf("answer = %q, want the version %q", body, version)
+	}
+}
