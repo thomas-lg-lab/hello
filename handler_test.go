@@ -78,37 +78,35 @@ func TestHelloShowsTheVersion(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	// Check Content-Type with a quick recorder.
 	req := httptest.NewRequest(http.MethodGet, "/version", nil)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("GET /version = %d, want 200", rec.Code)
-	}
 	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
 		t.Fatalf("Content-Type = %q, want %q", ct, "application/json")
 	}
-	var v struct {
-		Version string `json:"version"`
-	}
-	if err := json.NewDecoder(rec.Body).Decode(&v); err != nil {
+	// Decode the body once into a map and compare the whole map.
+	var m map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &m); err != nil {
 		t.Fatalf("decode body = %v", err)
 	}
-	if v.Version != version {
-		t.Fatalf("version = %q, want %q", v.Version, version)
+	want := map[string]string{"version": version}
+	for k, v := range want {
+		if m[k] != v {
+			t.Fatalf("body[%q] = %q, want %q", k, m[k], v)
+		}
+	}
+	if len(m) != len(want) {
+		t.Fatalf("body has %d keys, want %d: %v", len(m), len(want), m)
 	}
 }
 
 func TestVersionHEAD(t *testing.T) {
 	h := newHandler(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	req := httptest.NewRequest(http.MethodHead, "/version", nil)
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("HEAD /version = %d, want 200", rec.Code)
+	code, _ := request(t, h, http.MethodHead, "/version", "")
+	if code != http.StatusOK {
+		t.Fatalf("HEAD /version = %d, want 200", code)
 	}
-	// httptest.ResponseRecorder does not suppress the body for HEAD requests
-	// like a real HTTP server does. We only verify the status code.
-	_ = rec.Body.String()
 }
 
 func TestVersionOPTIONS(t *testing.T) {
