@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -22,6 +23,7 @@ func newHandler(dataDir string, log *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", a.healthz)
 	mux.HandleFunc("GET /{$}", a.hello)
+	mux.HandleFunc("GET /version", a.version)
 	return mux
 }
 
@@ -46,6 +48,13 @@ func (a *app) hello(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Visites : %d\n", visits)
 	}
 	fmt.Fprintf(w, "Version : %s\n", version)
+}
+
+func (a *app) version(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]string{"version": version}); err != nil {
+		a.log.Error("version json", "err", err)
+	}
 }
 
 // countVisit increments the counter kept in <dataDir>/visits; a missing file is a first start.
