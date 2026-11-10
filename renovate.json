@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Shared preset of thomas-lg-lab (schedule, dashboard, security PRs, digests and SHAs pinned, three-day release age). Add this project's own managers, groups, ignores and auto-merge policy below.",
+  "extends": ["github>thomas-lg-lab/renovate-config"],
+  "packageRules": [
+    {
+      "description": "Patch and minor merge on their own once the required checks pass: merging only moves the edge image, a release stays a decision. Remove this rule to review every update by hand.",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pinDigest"],
+      "automerge": true
+    },
+    {
+      "description": "A digest-only update of a GitHub Action means its tag now points at another commit: the pattern of a hijacked tag (trivy-action, March 2026), which the release-age delay does not catch. Always reviewed by hand.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest"],
+      "automerge": false
+    }
+  ]
+}

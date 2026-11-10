@@ -1,0 +1,43 @@
+# CI: the project's checks, then the image, so nothing is published that did not pass them. Replace the `checks`
+# job with the project's own (build, tests, lint), keep their names in `needs` of `image` and in the required
+# checks of .github/rulesets/main.json. A project without an image deletes the `image` job (and `image / build`
+# from the ruleset, and registry-cleanup.yml).
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  # release-drafter.yml dispatches this workflow on the tag a published release creates.
+  workflow_dispatch:
+
+permissions: {}
+
+# A newer push to a PR cancels its run; main and tags never cancel, a publish must not stop mid-push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: echo "Replace this job with the project's build, tests and lint."
+
+  # Build and Trivy gate on every PR; edge and sha-* from main; X.Y.Z and latest from a release tag.
+  image:
+    needs: [checks]
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+      id-token: write
+      attestations: write
+    uses: thomas-lg-lab/.github/.github/workflows/container-image.yml@21ff202fae4e0f07d7f18b710022abc2d5004f96 # v2.0.0

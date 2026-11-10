@@ -1,0 +1,32 @@
+# Release notes: a push to main refreshes the draft release from the merged PRs' labels; a manual run publishes it
+# as the organisation's release App, whose tag push starts ci.yml on the release image. Shared workflow and
+# configuration of thomas-lg-lab/.github; the App's credentials are organisation secrets (secrets: inherit).
+name: Release Drafter
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Log what would be published, change nothing
+        type: boolean
+        default: false
+
+permissions: {}
+
+# Two drafter runs would race on the same draft. No cancel: a publish must never be killed mid-flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    permissions:
+      contents: write
+      pull-requests: read
+    secrets: inherit
+    uses: thomas-lg-lab/.github/.github/workflows/release-drafter.yml@21ff202fae4e0f07d7f18b710022abc2d5004f96 # v2.0.0
+    with:
+      publish: ${{ github.event_name == 'workflow_dispatch' }}
+      dry-run: ${{ inputs.dry-run == true }}
