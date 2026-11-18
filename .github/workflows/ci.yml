@@ -44,6 +44,11 @@ jobs:
       packages: write
       id-token: write
       attestations: write
-    uses: thomas-lg-lab/.github/.github/workflows/container-image.yml@54ca50420258f144ef973c2a29005eb416f6660a # v2.3.0
+    uses: thomas-lg-lab/.github/.github/workflows/container-image.yml@35e66e4e8cf3abc1ca49e81e43543c077b64ff64 # v2.5.0
     with:
+      # A new edge is followed at once by the lab: Renovate bumps the digest in the deployment repository.
+      lab-update: true
       contract-test: true
+    secrets:
+      DEPLOY_APP_CLIENT_ID: ${{ secrets.DEPLOY_APP_CLIENT_ID }}
+      DEPLOY_APP_PRIVATE_KEY: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
