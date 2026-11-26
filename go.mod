@@ -1,3 +1,3 @@
 module github.com/thomas-lg-lab/hello
 
-go 1.27
+go 1.27.4
